@@ -40,7 +40,7 @@ class FluxExecutor(ClusterExecutor):
         printreason=False,
         quiet=False,
         printshellcmds=False,
-        args=None,
+        executor_args=None,
     ):
         super().__init__(
             workflow,

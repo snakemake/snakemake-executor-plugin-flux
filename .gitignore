@@ -2,7 +2,6 @@ bin/
 lib/
 *.db
 snakemake_executor_flux.egg-info
-snakemake
 env
 .env
 apigen/_build
