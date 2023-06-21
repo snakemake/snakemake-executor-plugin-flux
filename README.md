@@ -131,6 +131,7 @@ setup to drastically change. Our setup supports:
 Each plugin is expected to have, at the top level of the module (e.g., `snakemake_executor_example.<func>`), the following functions or attributes for Snakemake to find:
 
  - A custom dataclasses.dataclass with namespaced executor plugin arguments
+ - A `snakemake_minimum_version` that defines the minimum version of snakemake your plugin is compatible with.
  - `add_args`: will take as input the parser, and add the dataclass as namespaced arguments (e.g, `<plugin>_arg`).
  - `parse`: takes the parsed arguments "args" and converts back to dataclass, and does any changes that are needed for the executor. This could be where defaults are adjusted depending on the choice.
  - `local_executor`: should be akin to a "pointer" to whatever class you want Snakemake to use for your local executor. For most, this can be the `snakemake.executor.CPUExecutor`
@@ -179,6 +180,42 @@ INSTALL_REQUIRES = (
     ("argparse-dataclass", {"min_version": None}),
 )
 ```
+
+#### snakemake_minimum_version
+
+We ask that your class provide a `snakemake_minimum_version` that can be used to assess
+compatibility with Snakemake. Note that (at the time of this writing) plugins are anticipated
+to be added to Snakemake 7.28.4, so that would be the absolute minimum.
+
+```python
+# This is the minimum version of snakemake that the plugin is compatible with
+snakemake_minimum_version = "7.3.4"
+```
+
+Note that if you want to live dangerously, you can choose "any":
+
+```python
+snakemake_minimum_version = "any"
+```
+
+This attribute will be checked for as part of the validation, and you should expect it to parse
+with `packaging.version`, e.g.,:
+
+```
+import packaging.version
+
+# This would be the version from snakemake
+snakemake_version = packaging.version.parse(__version__)
+
+# And you minimum version
+minimum_version = packaging.version.parse(minimum_version)
+
+# And how we compare them (this needs to be true)
+snakemake_version >= minimum_version
+```
+
+Note that if we discover an "unknown" version with Snakemake, we allow it to pass, assuming
+that you are developing.
 
 #### add_args
 

@@ -1,13 +1,19 @@
 from dataclasses import dataclass
 from typing import Optional
 
-import snakemake.plugins as plugins
 from argparse_dataclass import _add_dataclass_options
 from snakemake.executors import CPUExecutor
+from snakemake.logging import logger
 
 from snakemake_executor_flux.version import __version__
 
 from .executor import FluxExecutor
+
+# This will only be available with snakemake v7.28.4
+try:
+    import snakemake.plugins as plugins
+except ImportError:
+    logger.error("A minimum version of snakemake v7.28.4 is required to use plugins.")
 
 assert __version__
 
@@ -15,6 +21,9 @@ assert __version__
 # These could be functions if the import needs to happen locally
 local_executor = CPUExecutor
 executor = FluxExecutor
+
+# This is the minimum version of snakemake that the plugin is compatible with
+snakemake_minimum_version = "7.3.4"
 
 # You can create a Dataclass that will translate to an argument group
 # It is recommended to namespace the arguments with your group
