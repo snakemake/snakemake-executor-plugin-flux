@@ -1,4 +1,4 @@
-name: test cloud-select
+name: test snakemake-executor-flux
 
 on:
   pull_request: []
