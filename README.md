@@ -169,15 +169,8 @@ For the above to work for more than one plugin, it is very important that:
 - You also provide a default argument, otherwise the same will happen!
 
 You can currently add arguments for str, int, float, or bool. Advanced types can be added
-when needed or requested. This is done by way of support from [argparse-dataclass](https://github.com/mivade/argparse_dataclass/),
-which should be added to your setup.py (or in the case of the example here, is in [version.py](snakemake_executor_flux/version.py)):
-
-```python
-INSTALL_REQUIRES = (
-    ("snakemake", {"min_version": None}),
-    ("argparse-dataclass", {"min_version": None}),
-)
-```
+when needed or requested. This is done by way of support from [argparse-dataclass](https://github.com/mivade/argparse_dataclass/)
+that is added to Snakemake.
 
 #### snakemake_minimum_version
 
