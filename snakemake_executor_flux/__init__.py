@@ -1,30 +1,22 @@
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
 
-from snakemake.executors import CPUExecutor
+from snakemake_executor_plugin_interface import CommonSettings, ExecutorSettingsBase
 
-from snakemake_executor_flux.version import __version__
-
-from .executor import FluxExecutor
-
-assert __version__
-
-# Common plugin interfaces to get the executor classes
-# These could be functions if the import needs to happen locally
-local_executor = CPUExecutor
-executor = FluxExecutor
-
-# This is the minimum version of snakemake that the plugin is compatible with
-snakemake_minimum_version = "7.3.4"
-
-# You can create a Dataclass that will translate to an argument group
-# These will be namespaced as args with your dataclass args. E.g.,,
-# description --> flux_description and --flux-description
-# All arguments MUST be optional, and validation should
-# happen in the init of your plugin.
+from .executor import FluxExecutor as Executor  # noqa
 
 
+# Optional:
+# define additional settings for your executor
+# They will occur in the Snakemake CLI as --<executor-name>-<param-name>
+# Omit this class if you don't need any.
 @dataclass
-class ExecutorParameters:
-    help: Optional[str] = None
-    description: Optional[str] = None
+class ExecutorSettings(ExecutorSettingsBase):
+    myparam: int = field(default=None, metadata={"help": "Some help text"})
+
+
+# Optional:
+# specify common settings shared by various executors.
+# Omit this statement if you don't need any and want
+# to rely on the defaults (highly recommended unless
+# you are very sure what you do).
+common_settings = CommonSettings(use_threads=True, flux=True)
