@@ -19,4 +19,7 @@ class ExecutorSettings(ExecutorSettingsBase):
 # Omit this statement if you don't need any and want
 # to rely on the defaults (highly recommended unless
 # you are very sure what you do).
-common_settings = CommonSettings(use_threads=True, flux=True)
+common_settings = CommonSettings(
+    # flux executor submits jobs to flux
+    non_local_exec=True
+)
