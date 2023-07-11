@@ -27,7 +27,7 @@ FluxJob = namedtuple(
 )
 
 
-class FluxExecutor(ClusterExecutor):
+class FluxExecutor(RemoteExecutor):
     """
     The Flux executor deploys workflows to a flux cluster.
     """
