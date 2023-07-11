@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from snakemake_executor_plugin_interface import CommonSettings, ExecutorSettingsBase
+from snakemake_interface_executor_plugins import CommonSettings, ExecutorSettingsBase
 
 from .executor import FluxExecutor as Executor  # noqa
 
