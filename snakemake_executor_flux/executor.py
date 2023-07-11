@@ -36,6 +36,8 @@ class FluxExecutor(ClusterExecutor):
         self,
         workflow,
         dag,
+        stats,
+        logger,
         cores,
         jobname="snakejob.{name}.{jobid}.sh",
         printreason=False,
