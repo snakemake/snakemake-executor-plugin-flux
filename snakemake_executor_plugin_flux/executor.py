@@ -9,8 +9,8 @@ from collections import namedtuple
 
 from snakemake.common import async_lock
 from snakemake.exceptions import WorkflowError
-from snakemake_executor_plugin_interface.executors.remote import RemoteExecutor
-from snakemake_executor_plugin_interface.utils import sleep
+from snakemake_interface_executor_plugins.executors.remote import RemoteExecutor
+from snakemake_interface_executor_plugins.utils import sleep
 from snakemake.logging import logger
 from snakemake.resources import DefaultResources
 
