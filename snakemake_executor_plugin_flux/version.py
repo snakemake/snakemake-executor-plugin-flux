@@ -14,7 +14,7 @@ LICENSE = "LICENSE"
 
 INSTALL_REQUIRES = (
     ("snakemake", {"min_version": None}),
-    ("snakemake-executor-plugin-interface", {"min_version": None}),
+    ("snakemake-interface-executor-plugins", {"min_version": None}),
 )
 
 TESTS_REQUIRES = (("pytest", {"min_version": "4.6.2"}),)
