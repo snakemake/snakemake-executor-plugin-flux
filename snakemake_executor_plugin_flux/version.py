@@ -1,7 +1,7 @@
 __version__ = "0.0.0"
 AUTHOR = "Vanessa Sochat"
 EMAIL = "vsoch@users.noreply.github.com"
-NAME = "snakemake-executor-flux"
+NAME = "snakemake-executor-plugin-flux"
 PACKAGE_URL = "https://github.com/snakemake/snakemake-executor-flux"
 KEYWORDS = "snakemake, workflow, example, plugin"
 DESCRIPTION = "An example external plugin to use with Snakemake"

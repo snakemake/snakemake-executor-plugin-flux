@@ -41,7 +41,7 @@ Go into the examples directory (where the Snakefile is) and run snakemake, targe
 ```bash
 $ cd ./example
 
-# This says "use the custom executor module named snakemake_executor_flux"
+# This says "use the custom executor module named snakemake_executor_plugin_flux"
 $ snakemake --jobs 1 --executor flux
 ```
 ```console

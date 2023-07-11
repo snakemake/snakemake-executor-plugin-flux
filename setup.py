@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 
 def get_lookup():
     lookup = dict()
-    version_file = os.path.join("snakemake_executor_flux", "version.py")
+    version_file = os.path.join("snakemake_executor_plugin_flux", "version.py")
     with open(version_file) as filey:
         exec(filey.read(), lookup)
     return lookup
@@ -98,6 +98,6 @@ if __name__ == "__main__":
             "Programming Language :: Python :: 3.8",
         ],
         entry_points={
-            "console_scripts": ["cloud-select=snakemake_executor_flux.client:run"]
+            "console_scripts": ["cloud-select=snakemake_executor_plugin_flux.client:run"]
         },
     )
