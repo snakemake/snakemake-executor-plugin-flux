@@ -48,6 +48,8 @@ class FluxExecutor(RemoteExecutor):
         super().__init__(
             workflow,
             dag,
+            stats,
+            logger,
             None,
             jobname=jobname,
             printreason=printreason,
