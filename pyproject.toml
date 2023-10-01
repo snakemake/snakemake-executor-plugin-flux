@@ -1,7 +1,25 @@
-[tool.black]
-profile = "black"
-exclude = ["^env/"]
+[tool.poetry]
+name = "snakemake-executor-plugin-flux"
+version = "0.1.0"
+description = "A snakemake executor plugin for the Flux scheduler"
+authors = ["vsoch <vsoch@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "snakemake_executor_plugin_flux"}]
 
-[tool.isort]
-profile = "black" # needed for black/isort compatibility
-skip = []
+[tool.poetry.dependencies]
+python = "^3.9"
+snakemake-interface-common = "^1.10.0"
+# snakemake-interface-executor-plugins = "^5.0.2"
+snakemake-interface-executor-plugins = { git = "https://github.com/snakemake/snakemake-interface-executor-plugins", branch = "main" }
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.9.1"
+flake8 = "^6.1.0"
+coverage = "^7.3.1"
+pytest = "^7.4.2"
+# snakemake = "^7.32.4"
+snakemake = { git = "https://github.com/vsoch/snakemake", branch = "update-lazy-property-import" }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,25 +1,17 @@
-from dataclasses import dataclass, field
-
-from snakemake_interface_executor_plugins import CommonSettings, ExecutorSettingsBase
-
+from snakemake_interface_executor_plugins.settings import CommonSettings
 from .executor import FluxExecutor as Executor  # noqa
 
 
-# Optional:
-# define additional settings for your executor
-# They will occur in the Snakemake CLI as --<executor-name>-<param-name>
-# Omit this class if you don't need any.
-@dataclass
-class ExecutorSettings(ExecutorSettingsBase):
-    myparam: int = field(default=None, metadata={"help": "Some help text"})
-
-
-# Optional:
-# specify common settings shared by various executors.
-# Omit this statement if you don't need any and want
-# to rely on the defaults (highly recommended unless
-# you are very sure what you do).
+# Required:
+# Common settings shared by various executors.
 common_settings = CommonSettings(
-    # flux executor submits jobs to flux
-    non_local_exec=True
+    # define whether your executor plugin executes locally
+    # or remotely. In virtually all cases, it will be remote execution
+    # (cluster, cloud, etc.). Only Snakemake's standard execution
+    # plugins (snakemake-executor-plugin-dryrun, snakemake-executor-plugin-local)
+    # are expected to specify False here.
+    non_local_exec=True,
+    # Flux can have a shared filesystem if run in an HPC context, or not if cloud
+    # so we cannot set it one way or the other.
+    implies_no_shared_fs=True,
 )

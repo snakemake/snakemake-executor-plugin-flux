@@ -22,8 +22,7 @@ First, build the container:
 $ docker build -f example/Dockerfile -t flux-snake .
 ```
 
-Note that this currently uses a [custom branch](https://github.com/vsoch/snakemake/tree/add/executor-plugins) to install Snakemake.
-We will add the plugin to `/home/fluxuser/plugin`, install it, and shell in as the fluxuser to optimally interact with flux.
+We will add the plugin here to `/home/fluxuser/plugin`, install it, and shell in as the fluxuser to optimally interact with flux.
 After the container builds, shell in:
 
 ```bash
@@ -102,12 +101,5 @@ plugin for use or development (that doesn't need to be added to upstream snakema
 
 ## Developer
 
-### Instructions
-
-These are general instructions for the naming of your library.
-
-1. The plugin module should have the prefix `snakemake_executor_<name>`
-2. The name of your executor is assumed to be the last term (e.g., `<name>` or "flux" here)
-3. The library name, if provided via pypi to be installed with pip, should follow the same convention, but using dashes, e.g., "snakemake-executor-flux"
-
+The instructions for creating and scaffolding this plugin are [here](https://github.com/snakemake/poetry-snakemake-plugin#scaffolding-an-executor-plugin).
 Instructions for writing your plugin with examples are provided via the [snakemake-executor-plugin-interface](https://github.com/snakemake/snakemake-executor-plugin-interface).

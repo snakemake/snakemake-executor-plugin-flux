@@ -1,20 +1,17 @@
-__author__ = "Johannes Köster"
-__copyright__ = "Copyright 2022, Johannes Köster"
-__email__ = "johannes.koester@uni-due.de"
-__license__ = "MIT"
-
 import os
 import shlex
-from collections import namedtuple
 
-from snakemake.common import async_lock
-from snakemake.exceptions import WorkflowError
+from typing import List, Generator
+from snakemake_interface_executor_plugins.executors.base import SubmittedJobInfo
 from snakemake_interface_executor_plugins.executors.remote import RemoteExecutor
-from snakemake_interface_executor_plugins.utils import sleep
-from snakemake.logging import logger
-from snakemake.resources import DefaultResources
+from snakemake_interface_executor_plugins.workflow import WorkflowExecutorInterface
+from snakemake_interface_executor_plugins.logging import LoggerExecutorInterface
+from snakemake_interface_executor_plugins.jobs import (
+    JobExecutorInterface,
+)
+from snakemake_interface_common.exceptions import WorkflowError  # noqa
 
-# Just import flux once
+# Just import flux python bindings once
 try:
     import flux
     import flux.job
@@ -22,96 +19,70 @@ try:
 except ImportError:
     flux = None
 
-FluxJob = namedtuple(
-    "FluxJob", "job jobname jobid callback error_callback flux_future flux_logfile"
-)
-
 
 class FluxExecutor(RemoteExecutor):
-    """
-    The Flux executor deploys workflows to a flux cluster.
-    """
-
     def __init__(
         self,
-        workflow,
-        dag,
-        stats,
-        logger,
-        cores,
-        jobname="snakejob.{name}.{jobid}.sh",
-        printreason=False,
-        quiet=False,
-        printshellcmds=False,
-        executor_args=None,
+        workflow: WorkflowExecutorInterface,
+        logger: LoggerExecutorInterface,
     ):
         super().__init__(
             workflow,
-            dag,
-            stats,
             logger,
-            None,
-            jobname=jobname,
-            printreason=printreason,
-            quiet=quiet,
-            printshellcmds=printshellcmds,
-            assume_shared_fs=False,
-            max_status_checks_per_second=10,
+            # configure behavior of RemoteExecutor below
+            # whether arguments for setting the remote provider shall  be passed to jobs
+            pass_default_remote_provider_args=True,
+            # whether arguments for setting default resources shall be passed to jobs
+            pass_default_resources_args=True,
+            # whether environment variables shall be passed to jobs
+            pass_envvar_declarations_to_cmd=True,
+            # specify initial amount of seconds to sleep before checking for job status
+            init_seconds_before_status_checks=0,
         )
 
         # Attach variables for easy access
         self.workdir = os.path.realpath(os.path.dirname(self.workflow.persistence.path))
         self.envvars = list(self.workflow.envvars) or []
 
+        # access executor specific settings
+        # self.workflow.executor_settings
+
         # Quit early if we can't access the flux api
         if not flux:
-            raise WorkflowError(
-                "Cannot import flux. Is it installed (https://flux-framework.org) and available to you with Python bindings?"
-            )
+            raise WorkflowError("Cannot import flux. Are Python bindings available?")
         self._fexecutor = flux.job.FluxExecutor()
 
-    def cancel(self):
+    def get_envvar_declarations(self):
         """
-        cancel execution, usually by way of control+c. Cleanup is done in
-        shutdown (deleting cached workdirs in Google Cloud Storage
+        Temporary workaround until:
+        https://github.com/snakemake/snakemake-interface-executor-plugins/pull/31
+        is able to be merged.
         """
-        for job in self.active_jobs:
-            if not job.flux_future.done():
-                flux.job.cancel(self.f, job.jobid)
-        self.shutdown()
+        if self.pass_envvar_declarations_to_cmd:
+            return " ".join(
+                f"{var}={repr(os.environ[var])}"
+                for var in self.workflow.remote_execution_settings.envvars or {}
+            )
+        else:
+            return ""
 
-    def _set_job_resources(self, job):
-        """
-        Given a particular job, generate the resources that it needs,
-        including default regions and the virtual machine configuration
-        """
-        self.default_resources = DefaultResources(
-            from_other=self.workflow.default_resources
-        )
+    def run_job(self, job: JobExecutorInterface):
+        # Implement here how to run a job.
+        # You can access the job's resources, etc.
+        # via the job object.
+        # After submitting the job, you have to call
+        # self.report_job_submission(job_info).
+        # with job_info being of type
+        # snakemake_interface_executor_plugins.executors.base.SubmittedJobInfo.
+        # If required, make sure to pass the job's id to the job_info object, as keyword
+        # argument 'external_job_id'.
 
-    def get_snakefile(self):
-        assert os.path.exists(self.workflow.main_snakefile)
-        return self.workflow.main_snakefile
-
-    def _get_jobname(self, job):
-        # Use a dummy job name (human readable and also namespaced)
-        return "snakejob-%s-%s-%s" % (self.run_namespace, job.name, job.jobid)
-
-    def run(self, job, callback=None, submit_callback=None, error_callback=None):
-        """
-        Submit a job to flux.
-        """
-        super()._run(job)
-
-        flux_logfile = job.logfile_suggestion(".snakemake/flux_logs")
+        flux_logfile = job.logfile_suggestion(os.path.join(".snakemake", "flux_logs"))
         os.makedirs(os.path.dirname(flux_logfile), exist_ok=True)
-
-        # Prepare job resourcces
-        self._set_job_resources(job)
 
         # The entire snakemake command to run, etc
         command = self.format_job_exec(job)
-        logger.debug(command)
+        self.logger.debug(command)
 
         # Generate the flux job
         # flux does not support mem_mb, disk_mb
@@ -124,69 +95,90 @@ class FluxExecutor(RemoteExecutor):
         # Ensure the cwd is the snakemake working directory
         fluxjob.cwd = self.workdir
         fluxjob.environment = dict(os.environ)
+
+        # Resources, must have at least one CPU, and integer value
+        cpus_per_task = max(1, int(job.resources.get("cpus_per_task") or job.threads))
+        fluxjob.cpus_per_task = cpus_per_task
         flux_future = self._fexecutor.submit(fluxjob)
 
-        logger.info(
-            f"Job {job.jobid} has been submitted with flux jobid {flux_future.jobid()} (log: {flux_logfile})."
-        )
+        # Save aux metadata
+        aux = {"flux_future": flux_future, "flux_logfile": flux_logfile}
 
-        # Waiting for the jobid is a small performance penalty, same as calling flux.job.submit
-        self.active_jobs.append(
-            FluxJob(
-                job,
-                str(job),
-                str(flux_future.jobid()),
-                callback,
-                error_callback,
-                flux_future,
-                flux_logfile,
-            )
-        )
+        # Record job info
+        jobid = str(flux_future.jobid())
+        self.report_job_submission(SubmittedJobInfo(job, external_jobid=jobid, aux=aux))
 
-    async def _wait_for_jobs(self):
-        """
-        Wait for jobs to complete. This means requesting their status,
-        and then marking them as finished when a "done" parameter
-        shows up. Even for finished jobs, the status should still return
-        """
-        while True:
-            # always use self.lock to avoid race conditions
-            async with async_lock(self.lock):
-                if not self.wait:
-                    return
-                active_jobs = self.active_jobs
-                self.active_jobs = list()
-                still_running = list()
+    def get_snakefile(self):
+        assert os.path.exists(self.workflow.main_snakefile)
+        return self.workflow.main_snakefile
 
-            # Loop through active jobs and act on status
-            for j in active_jobs:
-                logger.debug("Checking status for job {}".format(j.jobid))
-                if j.flux_future.done():
-                    # The exit code can help us determine if the job was successful
-                    try:
-                        exit_code = j.flux_future.result(0)
-                    except RuntimeError:
-                        # job did not complete
-                        self.print_job_error(j.job, jobid=j.jobid)
-                        j.error_callback(j.job)
+    def _get_jobname(self, job):
+        # Use a dummy job name (human readable and also namespaced)
+        return "snakejob-%s-%s-%s" % (self.run_namespace, job.name, job.jobid)
 
-                    else:
-                        # the job finished (but possibly with nonzero exit code)
-                        if exit_code != 0:
-                            self.print_job_error(
-                                j.job, jobid=j.jobid, aux_logs=[j.flux_logfile]
-                            )
-                            j.error_callback(j.job)
-                            continue
+    async def check_active_jobs(
+        self, active_jobs: List[SubmittedJobInfo]
+    ) -> Generator[SubmittedJobInfo, None, None]:
+        # Check the status of active jobs.
 
-                        # Finished and success!
-                        j.callback(j.job)
+        # You have to iterate over the given list active_jobs.
+        # If you provided it above, each will have its external_jobid set according
+        # to the information you provided at submission time.
+        # For jobs that have finished successfully, you have to call
+        # self.report_job_success(active_job).
+        # For jobs that have errored, you have to call
+        # self.report_job_error(active_job).
+        # This will also take care of providing a proper error message.
+        # Usually there is no need to perform additional logging here.
+        # Jobs that are still running have to be yielded.
+        #
+        # For queries to the remote middleware, please use
+        # self.status_rate_limiter like this:
+        #
+        # async with self.status_rate_limiter:
+        #    # query remote middleware here
+        #
+        # To modify the time until the next call of this method,
+        # you can set self.next_sleep_seconds here.
 
-                # Otherwise, we are still running
+        # Loop through active jobs and act on status
+        for j in active_jobs:
+            jobid = j.external_jobid
+            self.logger.debug(f"Checking status for job {jobid}")
+            flux_future = j.aux["flux_future"]
+
+            # Aux logs are consistently here
+            aux_logs = [j.aux["flux_logfile"]]
+
+            # Case 1: the job is done
+            if flux_future.done():
+                # The exit code can help us determine if the job was successful
+                try:
+                    exit_code = flux_future.result(0)
+                except RuntimeError:
+                    # job did not complete
+                    msg = f"Flux job '{j.external_jobid}' failed. "
+                    self.report_job_error(j, msg=msg, aux_logs=aux_logs)
+
                 else:
-                    still_running.append(j)
-            async with async_lock(self.lock):
-                self.active_jobs.extend(still_running)
+                    # the job finished (but possibly with nonzero exit code)
+                    if exit_code != 0:
+                        msg = f"Flux job '{jobid}' finished with non-zero exit code. "
+                        self.report_job_error(j, msg=msg, aux_logs=aux_logs)
+                        continue
 
-            # Sleeps for 10 seconds
-            await sleep()
+                    # Finished and success!
+                    self.report_job_success(j)
+
+            # Otherwise, we are still running
+            else:
+                yield j
+
+    def cancel_jobs(self, active_jobs: List[SubmittedJobInfo]):
+        """
+        cancel all active jobs. This method is called when snakemake is interrupted.
+        """
+        for job in active_jobs:
+            if not job.flux_future.done():
+                flux.job.cancel(self.f, job.jobid)
+        self.shutdown()
