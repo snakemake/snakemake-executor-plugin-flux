@@ -1,0 +1,27 @@
+shell.executable("bash")
+conda_env = Path("test-env.yaml")
+
+
+rule all:
+    input:
+        expand("test{i}.out2", i=range(3)),
+
+
+rule a:
+    output:
+        "test{i}.out",
+    conda:
+        "test-env.yaml"
+    shell:
+        "Tm -h > {output} || true"
+
+
+rule b:
+    input:
+        "test{i}.out",
+    output:
+        "test{i}.out2",
+    conda:
+        conda_env
+    shell:
+        "Tm -h > {output} || true"

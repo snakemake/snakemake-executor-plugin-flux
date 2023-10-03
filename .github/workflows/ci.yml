@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  pull_request: []
+
+jobs:
+  formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Install poetry
+        run: pipx install poetry
+
+      - name: Determine dependencies
+        run: poetry lock
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+          cache: poetry
+
+      - name: Install Dependencies using Poetry
+        run: poetry install
+
+      - name: Check formatting
+        run: poetry run black --check .
+
+  linting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+
+      - name: Install poetry
+        run: pipx install poetry
+
+      - name: Determine dependencies
+        run: poetry lock
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+          cache: poetry
+
+      - name: Install Dependencies using Poetry
+        run: poetry install
+
+      - name: Check code
+        run: poetry run flake8
+
+#  testing:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Check out the code
+#        uses: actions/checkout@v3
+
+#      - name: Install poetry
+#        run: pipx install poetry
+
+#      - name: Determine dependencies
+#        run: poetry lock
+
+#      - uses: actions/setup-python@v4
+#        with:
+#          python-version: "3.9"
+#          cache: poetry
+
+#      - name: Install Dependencies using Poetry
+#        run: poetry install
+
+#      - name: Run pytest
+#        run: poetry run coverage run -m pytest tests/tests.py
+
+#      - name: Run Coverage
+#        run: poetry run coverage report -m
+
+  testing:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        container: ["fluxrm/flux-sched:jammy"]
+
+    container:
+      image: ${{ matrix.container }}
+      options: "--platform=linux/amd64 --user root -it"
+
+    name: ${{ matrix.container }}
+    steps:
+      - name: Update environment for Flux
+        run: |
+          echo "/opt/conda/bin" >> $GITHUB_PATH
+          echo "/root/.local/bin" >> $GITHUB_PATH
+          echo "FLUX_MODULE_PATH=${FLUX_MODULE_PATH}:/usr/lib/x86_64-linux-gnu/flux/modules" >> ${GITHUB_ENV}
+
+      - name: Make Space
+        run: |
+          rm -rf /usr/share/dotnet
+          rm -rf /opt/ghc
+
+      - uses: actions/checkout@v4
+      - name: Install poetry
+        run: |
+          sudo apt-get install -y python3-pip
+          ln -s $(which python3) /bin/python
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install git+https://github.com/vsoch/snakemake@update-lazy-property-import
+          python3 -m pip install .
+    
+      - name: Start Flux and Test Workflow
+        run: |
+          # We must have python3->python accessible for this to work
+          su fluxuser
+          echo "ROOT=$PWD" >> $GITHUB_ENV
+          cd example
+          which snakemake
+          python3 -m pip freeze | grep snakemake
+          pip freeze | grep snakemake
+          flux start snakemake --show-failed-logs --verbose --executor flux --jobs=1 --no-shared-fs
+
+      - name: Test Flux with Conda
+        run: |
+          # conda python needs to be after system python
+          wget https://repo.anaconda.com/archive/Anaconda3-2023.09-0-Linux-x86_64.sh
+          sudo bash Anaconda3-2023.09-0-Linux-x86_64.sh -p /opt/conda -b
+          export PATH=$PATH:/opt/conda/bin
+          # Now install again
+          python3 -m pip install git+https://github.com/vsoch/snakemake@update-lazy-property-import
+          cd $ROOT
+          python3 -m pip install .
+          which python
+          which conda
+          cd $ROOT/example/conda
+          flux start snakemake --show-failed-logs --verbose --executor flux --jobs=1 --use-conda --conda-frontend=conda
