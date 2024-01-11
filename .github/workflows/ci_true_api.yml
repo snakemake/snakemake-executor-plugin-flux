@@ -1,4 +1,4 @@
-name: test-googlebatch-true-api
+name: test-flux
 
 on:
   workflow_dispatch:

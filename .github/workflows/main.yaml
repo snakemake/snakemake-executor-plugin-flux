@@ -1,4 +1,4 @@
-name: test snakemake-executor-kueue
+name: test snakemake-executor-flux
 
 on:
   pull_request: []
