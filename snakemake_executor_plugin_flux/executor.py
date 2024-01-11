@@ -26,19 +26,7 @@ class FluxExecutor(RemoteExecutor):
         workflow: WorkflowExecutorInterface,
         logger: LoggerExecutorInterface,
     ):
-        super().__init__(
-            workflow,
-            logger,
-            # configure behavior of RemoteExecutor below
-            # whether arguments for setting the remote provider shall  be passed to jobs
-            pass_default_remote_provider_args=True,
-            # whether arguments for setting default resources shall be passed to jobs
-            pass_default_resources_args=True,
-            # whether environment variables shall be passed to jobs
-            pass_envvar_declarations_to_cmd=True,
-            # specify initial amount of seconds to sleep before checking for job status
-            init_seconds_before_status_checks=0,
-        )
+        super().__init__(workflow, logger)
 
         # Attach variables for easy access
         self.workdir = os.path.realpath(os.path.dirname(self.workflow.persistence.path))
@@ -58,25 +46,12 @@ class FluxExecutor(RemoteExecutor):
         https://github.com/snakemake/snakemake-interface-executor-plugins/pull/31
         is able to be merged.
         """
-        if self.pass_envvar_declarations_to_cmd:
-            return " ".join(
-                f"{var}={repr(os.environ[var])}"
-                for var in self.workflow.remote_execution_settings.envvars or {}
-            )
-        else:
-            return ""
+        return " ".join(
+            f"{var}={repr(os.environ[var])}"
+            for var in self.workflow.remote_execution_settings.envvars or {}
+        )
 
     def run_job(self, job: JobExecutorInterface):
-        # Implement here how to run a job.
-        # You can access the job's resources, etc.
-        # via the job object.
-        # After submitting the job, you have to call
-        # self.report_job_submission(job_info).
-        # with job_info being of type
-        # snakemake_interface_executor_plugins.executors.base.SubmittedJobInfo.
-        # If required, make sure to pass the job's id to the job_info object, as keyword
-        # argument 'external_job_id'.
-
         flux_logfile = job.logfile_suggestion(os.path.join(".snakemake", "flux_logs"))
         os.makedirs(os.path.dirname(flux_logfile), exist_ok=True)
 
@@ -119,28 +94,6 @@ class FluxExecutor(RemoteExecutor):
     async def check_active_jobs(
         self, active_jobs: List[SubmittedJobInfo]
     ) -> Generator[SubmittedJobInfo, None, None]:
-        # Check the status of active jobs.
-
-        # You have to iterate over the given list active_jobs.
-        # If you provided it above, each will have its external_jobid set according
-        # to the information you provided at submission time.
-        # For jobs that have finished successfully, you have to call
-        # self.report_job_success(active_job).
-        # For jobs that have errored, you have to call
-        # self.report_job_error(active_job).
-        # This will also take care of providing a proper error message.
-        # Usually there is no need to perform additional logging here.
-        # Jobs that are still running have to be yielded.
-        #
-        # For queries to the remote middleware, please use
-        # self.status_rate_limiter like this:
-        #
-        # async with self.status_rate_limiter:
-        #    # query remote middleware here
-        #
-        # To modify the time until the next call of this method,
-        # you can set self.next_sleep_seconds here.
-
         # Loop through active jobs and act on status
         for j in active_jobs:
             jobid = j.external_jobid

@@ -10,8 +10,9 @@ common_settings = CommonSettings(
     # (cluster, cloud, etc.). Only Snakemake's standard execution
     # plugins (snakemake-executor-plugin-dryrun, snakemake-executor-plugin-local)
     # are expected to specify False here.
+    job_deploy_sources=True,
     non_local_exec=True,
     # Flux can have a shared filesystem if run in an HPC context, or not if cloud
     # so we cannot set it one way or the other.
-    implies_no_shared_fs=True,
+    implies_no_shared_fs=False,
 )

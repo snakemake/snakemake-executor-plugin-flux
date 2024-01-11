@@ -5,21 +5,27 @@ description = "A snakemake executor plugin for the Flux scheduler"
 authors = ["vsoch <vsoch@users.noreply.github.com>"]
 readme = "README.md"
 packages = [{include = "snakemake_executor_plugin_flux"}]
+license = "MIT"
+repository = "https://github.com/snakemake/snakemake-executor-plugin-flux"
+documentation = "https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/flux.html"
+keywords = ["snakemake", "plugin", "executor", "flux", "flux-framework"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
-snakemake-interface-common = "^1.10.0"
-# snakemake-interface-executor-plugins = "^5.0.2"
-snakemake-interface-executor-plugins = { git = "https://github.com/snakemake/snakemake-interface-executor-plugins", branch = "main" }
+python = "^3.11"
+snakemake-interface-common = "^1.14.0"
+snakemake-interface-executor-plugins = "^8.1.1"
+
+[tool.coverage.run]
+omit = [".*", "*/site-packages/*", "Snakefile"]
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.9.1"
 flake8 = "^6.1.0"
 coverage = "^7.3.1"
 pytest = "^7.4.2"
-# snakemake = "^7.32.4"
-snakemake = { git = "https://github.com/vsoch/snakemake", branch = "update-lazy-property-import" }
+snakemake = {git = "https://github.com/snakemake/snakemake.git", branch="main"}
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
