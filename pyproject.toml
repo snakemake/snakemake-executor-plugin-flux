@@ -11,7 +11,7 @@ documentation = "https://snakemake.github.io/snakemake-plugin-catalog/plugins/ex
 keywords = ["snakemake", "plugin", "executor", "flux", "flux-framework"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 snakemake-interface-common = "^1.14.0"
 snakemake-interface-executor-plugins = "^8.1.1"
 
