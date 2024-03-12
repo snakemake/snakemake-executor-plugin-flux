@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "snakemake-executor-plugin-flux"
-version = "0.1.0"
+version = "0.1.1"
 description = "A snakemake executor plugin for the Flux scheduler"
 authors = ["vsoch <vsoch@users.noreply.github.com>"]
 readme = "README.md"

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/snakemake/snakemake-executor-plugin-flux/compare/v0.1.0...v0.1.1) (2024-03-12)
+
+
+### Bug Fixes
+
+* update to latest interface ([b8c9c41](https://github.com/snakemake/snakemake-executor-plugin-flux/commit/b8c9c41d7ceadbd850e772ed7a9df2b1b3b92d95))
+
 ## 0.1.0 (2024-01-11)
 
 
